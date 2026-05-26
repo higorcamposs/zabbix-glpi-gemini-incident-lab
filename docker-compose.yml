@@ -1,0 +1,237 @@
+# zabbix-glpi-gemini-incident-lab
+# Local lab: Zabbix 7 + GLPI + Gemini Incident API (FastAPI + Gemini)
+#
+# Usage:
+#   cp .env.example .env
+#   edit .env and fill secrets marked as required
+#   docker compose up -d
+#
+# Ports:
+#   Zabbix Web:  http://localhost:8080
+#   GLPI:        http://localhost:8081
+#   Gemini API:  http://localhost:8000
+
+services:
+  # ---------------------------------------------------------------------------
+  # Zabbix stack
+  # ---------------------------------------------------------------------------
+  zabbix-db:
+    image: mysql:8.0
+    container_name: lab-zabbix-db
+    command: --character-set-server=utf8mb4 --collation-server=utf8mb4_bin
+    environment:
+      MYSQL_DATABASE: zabbix
+      MYSQL_USER: zabbix
+      MYSQL_PASSWORD: ${ZABBIX_DB_PASSWORD:?Set ZABBIX_DB_PASSWORD in .env}
+      MYSQL_ROOT_PASSWORD: ${ZABBIX_DB_ROOT_PASSWORD:?Set ZABBIX_DB_ROOT_PASSWORD in .env}
+    volumes:
+      - zabbix_db_data:/var/lib/mysql
+    networks:
+      - lab-net
+    healthcheck:
+      test: ["CMD", "mysqladmin", "ping", "-h", "localhost", "-u", "root", "-p${ZABBIX_DB_ROOT_PASSWORD:?Set ZABBIX_DB_ROOT_PASSWORD in .env}"]
+      interval: 10s
+      timeout: 5s
+      retries: 10
+      start_period: 30s
+
+  zabbix-server:
+    image: zabbix/zabbix-server-mysql:ubuntu-7.0-latest
+    container_name: lab-zabbix-server
+    depends_on:
+      zabbix-db:
+        condition: service_healthy
+    environment:
+      DB_SERVER_HOST: zabbix-db
+      MYSQL_DATABASE: zabbix
+      MYSQL_USER: zabbix
+      MYSQL_PASSWORD: ${ZABBIX_DB_PASSWORD:?Set ZABBIX_DB_PASSWORD in .env}
+      MYSQL_ROOT_PASSWORD: ${ZABBIX_DB_ROOT_PASSWORD:?Set ZABBIX_DB_ROOT_PASSWORD in .env}
+    networks:
+      - lab-net
+    restart: unless-stopped
+
+  zabbix-web:
+    image: zabbix/zabbix-web-nginx-mysql:ubuntu-7.0-latest
+    container_name: lab-zabbix-web
+    depends_on:
+      - zabbix-server
+      - zabbix-db
+    ports:
+      - "${ZABBIX_WEB_PORT:-8080}:8080"
+    environment:
+      ZBX_SERVER_HOST: zabbix-server
+      DB_SERVER_HOST: zabbix-db
+      MYSQL_DATABASE: zabbix
+      MYSQL_USER: zabbix
+      MYSQL_PASSWORD: ${ZABBIX_DB_PASSWORD:?Set ZABBIX_DB_PASSWORD in .env}
+      PHP_TZ: America/Sao_Paulo
+    networks:
+      - lab-net
+    restart: unless-stopped
+
+  zabbix-sender:
+    image: python:3.11-slim
+    container_name: lab-zabbix-sender
+    depends_on:
+      - zabbix-server
+    command: ["sleep", "infinity"]
+    volumes:
+      - ./scripts:/scripts:ro
+    networks:
+      - lab-net
+    restart: unless-stopped
+
+  # ---------------------------------------------------------------------------
+  # GLPI stack
+  # ---------------------------------------------------------------------------
+  glpi-db:
+    image: mariadb:10.11
+    container_name: lab-glpi-db
+    environment:
+      MYSQL_DATABASE: glpi
+      MYSQL_USER: glpi
+      MYSQL_PASSWORD: ${GLPI_DB_PASSWORD:?Set GLPI_DB_PASSWORD in .env}
+      MYSQL_ROOT_PASSWORD: ${GLPI_DB_ROOT_PASSWORD:?Set GLPI_DB_ROOT_PASSWORD in .env}
+    volumes:
+      - glpi_db_data:/var/lib/mysql
+    networks:
+      - lab-net
+    healthcheck:
+      test: ["CMD", "healthcheck.sh", "--connect", "--innodb_initialized"]
+      interval: 10s
+      timeout: 5s
+      retries: 10
+      start_period: 30s
+
+  glpi:
+    image: diouxx/glpi:latest
+    container_name: lab-glpi
+    depends_on:
+      glpi-db:
+        condition: service_healthy
+    ports:
+      - "8081:80"
+    environment:
+      TIMEZONE: America/Sao_Paulo
+    volumes:
+      - glpi_data:/var/www/html/glpi
+    networks:
+      - lab-net
+    restart: unless-stopped
+
+  # ---------------------------------------------------------------------------
+  # Gemini Incident API (FastAPI)
+  # ---------------------------------------------------------------------------
+  gemini-incident-api:
+    build:
+      context: ./app
+      dockerfile: Dockerfile
+      network: host
+    image: belempa-gemini-incident-api
+    container_name: lab-gemini-incident-api
+    depends_on:
+      - glpi
+    ports:
+      - "${API_PORT:-8000}:8000"
+    environment:
+      APP_ENV: ${APP_ENV:-local}
+      LOG_LEVEL: ${LOG_LEVEL:-INFO}
+      API_PORT: ${API_PORT:-8000}
+      WEBHOOK_SHARED_SECRET: ${WEBHOOK_SHARED_SECRET:?Set WEBHOOK_SHARED_SECRET in .env}
+      AI_PROVIDER: ${AI_PROVIDER:-gemini}
+      GEMINI_API_KEY: ${GEMINI_API_KEY:-}
+      GEMINI_MODEL: ${GEMINI_MODEL:-gemini-2.0-flash-lite}
+      GLPI_BASE_URL: ${GLPI_BASE_URL:-http://glpi/apirest.php}
+      GLPI_APP_TOKEN: ${GLPI_APP_TOKEN:-}
+      GLPI_USER_TOKEN: ${GLPI_USER_TOKEN:-}
+      GLPI_DEFAULT_ENTITY_ID: ${GLPI_DEFAULT_ENTITY_ID:-0}
+      GLPI_DEFAULT_CATEGORY_ID: ${GLPI_DEFAULT_CATEGORY_ID:-}
+      GLPI_DEFAULT_REQUESTER_ID: ${GLPI_DEFAULT_REQUESTER_ID:-}
+      GLPI_DEFAULT_TECHNICIAN_ID: ${GLPI_DEFAULT_TECHNICIAN_ID:-}
+    volumes:
+      - ./examples:/app/examples:ro
+    networks:
+      - lab-net
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8000/health"]
+      interval: 15s
+      timeout: 5s
+      retries: 5
+      start_period: 10s
+
+  zabbix-bootstrap:
+    build:
+      context: ./app
+      dockerfile: Dockerfile
+      network: host
+    image: belempa-gemini-incident-api
+    container_name: lab-zabbix-bootstrap
+    depends_on:
+      - zabbix-web
+      - zabbix-server
+      - gemini-incident-api
+    environment:
+      ZABBIX_API_URL: http://zabbix-web:8080/api_jsonrpc.php
+      PUBLIC_ZABBIX_URL: ${PUBLIC_ZABBIX_URL:-http://localhost:8080}
+      ZABBIX_USER: ${ZABBIX_USER:?Set ZABBIX_USER in .env}
+      ZABBIX_PASSWORD: ${ZABBIX_PASSWORD:?Set ZABBIX_PASSWORD in .env}
+      WEBHOOK_SHARED_SECRET: ${WEBHOOK_SHARED_SECRET:?Set WEBHOOK_SHARED_SECRET in .env}
+      LAB_RUNBOOK_URL: ${LAB_RUNBOOK_URL:-https://github.com/SEU_USUARIO/zabbix-glpi-gemini-incident-lab}
+    volumes:
+      - ./scripts:/scripts:ro
+    networks:
+      - lab-net
+    entrypoint: ["python", "/scripts/bootstrap_zabbix.py"]
+    restart: "no"
+
+  glpi-bootstrap:
+    image: belempa-gemini-incident-api
+    container_name: lab-glpi-bootstrap
+    depends_on:
+      - glpi
+    environment:
+      GLPI_BASE_URL: ${GLPI_BASE_URL:-http://glpi/apirest.php}
+      GLPI_APP_TOKEN: ${GLPI_APP_TOKEN:-}
+      GLPI_USER_TOKEN: ${GLPI_USER_TOKEN:-}
+      GLPI_DEFAULT_ENTITY_ID: ${GLPI_DEFAULT_ENTITY_ID:-0}
+      GLPI_LAB_CATEGORY_NAME: ${GLPI_LAB_CATEGORY_NAME:-Zabbix Alerts}
+    volumes:
+      - ./scripts:/scripts:ro
+    networks:
+      - lab-net
+    entrypoint: ["python", "/scripts/bootstrap_glpi.py"]
+    restart: "no"
+
+  demo-trigger:
+    image: belempa-gemini-incident-api
+    container_name: lab-demo-trigger
+    depends_on:
+      - zabbix-bootstrap
+      - gemini-incident-api
+    environment:
+      AUTO_TRIGGER_DEMO_ALERTS: ${AUTO_TRIGGER_DEMO_ALERTS:-true}
+      ZABBIX_SENDER_SERVER: zabbix-server
+      ZABBIX_SENDER_PORT: ${ZABBIX_SENDER_PORT:-10051}
+      DEMO_TRIGGER_WAIT_SECONDS: ${DEMO_TRIGGER_WAIT_SECONDS:-300}
+    volumes:
+      - ./scripts:/scripts:ro
+    networks:
+      - lab-net
+    entrypoint: ["python", "/scripts/auto_trigger_demo.py"]
+    restart: "no"
+
+networks:
+  lab-net:
+    driver: bridge
+    name: zabbix-glpi-gemini-lab-net
+    ipam:
+      driver: default
+      config:
+        - subnet: 172.28.100.0/24
+
+volumes:
+  zabbix_db_data:
+  glpi_db_data:
+  glpi_data:

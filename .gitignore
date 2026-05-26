@@ -1,0 +1,65 @@
+# Environment and secrets
+.env
+.env.*
+!.env.example
+.env.local
+.env.*.local
+*.env
+*.local
+*.secret
+*.token
+secrets/
+private/
+
+# Private keys and certificates
+*.key
+*.pem
+*.p12
+*.pfx
+id_rsa
+id_rsa.*
+id_ed25519
+id_ed25519.*
+
+# Python
+__pycache__/
+*.py[cod]
+*$py.class
+*.so
+.Python
+.venv/
+venv/
+ENV/
+.pytest_cache/
+.mypy_cache/
+.ruff_cache/
+.coverage
+htmlcov/
+build/
+dist/
+*.egg-info/
+
+# IDE
+.idea/
+.vscode/
+*.swp
+*.swo
+
+# Local AI/editor assistant state
+.cursor/
+.claude/
+.codex/
+.continue/
+.windsurf/
+.aider*
+
+# Docker local overrides
+docker-compose.override.yml
+
+# Logs and temp
+*.log
+.tmp/
+
+# OS
+.DS_Store
+Thumbs.db
