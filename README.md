@@ -317,3 +317,4 @@ curl -X POST "http://localhost:8000/demo/send-sample/plain?name=cpu_high" \
 - [docs/zabbix-webhook-setup.md](docs/zabbix-webhook-setup.md) — Webhooks Zabbix
 - [docs/architecture.md](docs/architecture.md) — Arquitetura
 - [docs/demo-script.md](docs/demo-script.md) — Roteiro da palestra
+- [docs/docker-venv-setup.md](docs/docker-venv-setup.md) — Setup portavel com Docker + venv

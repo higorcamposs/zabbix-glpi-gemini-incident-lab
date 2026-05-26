@@ -111,7 +111,7 @@ services:
       glpi-db:
         condition: service_healthy
     ports:
-      - "8081:80"
+      - "${GLPI_WEB_PORT:-8081}:80"
     environment:
       TIMEZONE: America/Sao_Paulo
     volumes:
@@ -127,7 +127,6 @@ services:
     build:
       context: ./app
       dockerfile: Dockerfile
-      network: host
     image: belempa-gemini-incident-api
     container_name: lab-gemini-incident-api
     depends_on:
@@ -165,7 +164,6 @@ services:
     build:
       context: ./app
       dockerfile: Dockerfile
-      network: host
     image: belempa-gemini-incident-api
     container_name: lab-zabbix-bootstrap
     depends_on:
