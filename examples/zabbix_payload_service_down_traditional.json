@@ -21,7 +21,7 @@
   "item_value": "0",
   "operational_data": "Current value: 0",
   "tags": "{\"lab_scenario\":\"service_down\",\"flow_type\":\"traditional\"}",
-  "macros": "{$ENVIRONMENT}=lab; {$APPLICATION}=demo-linux-server; {$OWNER_TEAM}=N2 Linux; {$CRITICALITY}=medium; {$BUSINESS_SERVICE}=Student Demo Platform; {$RUNBOOK_URL}=https://github.com/SEU_USUARIO/zabbix-glpi-gemini-incident-lab; {$DEFAULT_ACTION}=validate process, check resource usage, review recent logs",
+  "macros": "{$ENVIRONMENT}=lab; {$APPLICATION}=demo-linux-server; {$OWNER_TEAM}=N2 Linux; {$CRITICALITY}=medium; {$BUSINESS_SERVICE}=Student Demo Platform; {$RUNBOOK_URL}=https://github.com/higorcamposs/zabbix-glpi-gemini-incident-lab; {$DEFAULT_ACTION}=validate process, check resource usage, review recent logs",
   "problem_url": "http://localhost:8080/tr_events.php?triggerid=30007&eventid=900007",
   "flow_type": "traditional",
   "lab_scenario": "service_down",
