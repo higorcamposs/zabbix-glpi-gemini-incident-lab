@@ -21,7 +21,7 @@
   "item_value": "95",
   "operational_data": "Current value: 95",
   "tags": "{\"lab_scenario\":\"disk_full\",\"flow_type\":\"traditional\"}",
-  "macros": "{$ENVIRONMENT}=lab; {$APPLICATION}=demo-linux-server; {$OWNER_TEAM}=N2 Linux; {$CRITICALITY}=medium; {$BUSINESS_SERVICE}=Student Demo Platform; {$RUNBOOK_URL}=https://github.com/SEU_USUARIO/zabbix-glpi-gemini-incident-lab; {$DEFAULT_ACTION}=validate process, check resource usage, review recent logs",
+  "macros": "{$ENVIRONMENT}=lab; {$APPLICATION}=demo-linux-server; {$OWNER_TEAM}=N2 Linux; {$CRITICALITY}=medium; {$BUSINESS_SERVICE}=Student Demo Platform; {$RUNBOOK_URL}=https://github.com/higorcamposs/zabbix-glpi-gemini-incident-lab; {$DEFAULT_ACTION}=validate process, check resource usage, review recent logs",
   "problem_url": "http://localhost:8080/tr_events.php?triggerid=30005&eventid=900005",
   "flow_type": "traditional",
   "lab_scenario": "disk_full",
