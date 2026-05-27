@@ -122,7 +122,10 @@ def open_glpi_ticket(settings: Settings, title: str, content: str) -> int:
     if not settings.glpi_configured:
         raise HTTPException(
             status_code=503,
-            detail="GLPI is not configured. Set GLPI_APP_TOKEN and GLPI_USER_TOKEN in .env",
+            detail=(
+                "GLPI is not configured. Set GLPI_USER_TOKEN or "
+                "GLPI_API_USERNAME + GLPI_API_PASSWORD in .env"
+            ),
         )
     client = GlpiClient(settings)
     try:
@@ -138,7 +141,10 @@ def open_glpi_enriched_ticket(settings: Settings, package) -> dict:
     if not settings.glpi_configured:
         raise HTTPException(
             status_code=503,
-            detail="GLPI is not configured. Set GLPI_APP_TOKEN and GLPI_USER_TOKEN in .env",
+            detail=(
+                "GLPI is not configured. Set GLPI_USER_TOKEN or "
+                "GLPI_API_USERNAME + GLPI_API_PASSWORD in .env"
+            ),
         )
     client = GlpiClient(settings)
     try:

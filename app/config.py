@@ -34,6 +34,8 @@ class Settings(BaseSettings):
     glpi_base_url: str = "http://glpi/apirest.php"
     glpi_app_token: str = ""
     glpi_user_token: str = ""
+    glpi_api_username: str = ""
+    glpi_api_password: str = ""
     glpi_default_entity_id: int = 0
     glpi_default_category_id: Optional[int] = None
     glpi_default_requester_id: Optional[int] = None
@@ -64,7 +66,9 @@ class Settings(BaseSettings):
 
     @property
     def glpi_configured(self) -> bool:
-        return bool(self.glpi_user_token.strip())
+        token_mode = bool(self.glpi_user_token.strip())
+        credentials_mode = bool(self.glpi_api_username.strip() and self.glpi_api_password.strip())
+        return token_mode or credentials_mode
 
 
 @lru_cache

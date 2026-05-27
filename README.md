@@ -12,7 +12,7 @@ O fluxo principal usa **Gemini real** via `GEMINI_API_KEY`. O modo `mock` existe
 
 ```bash
 cp .env.example .env
-# Preencha WEBHOOK_SHARED_SECRET, senhas dos bancos, GEMINI_API_KEY e tokens GLPI
+# Preencha GEMINI_API_KEY (os demais defaults do lab ja vem prontos)
 docker compose up -d
 ```
 
@@ -116,16 +116,16 @@ cp .env.example .env
 Variaveis obrigatorias para o fluxo completo:
 
 ```env
-WEBHOOK_SHARED_SECRET=
+WEBHOOK_SHARED_SECRET=lab-webhook-secret
 AI_PROVIDER=gemini
 GEMINI_API_KEY=
 GEMINI_MODEL=gemini-2.0-flash-lite
-GLPI_APP_TOKEN=
-GLPI_USER_TOKEN=
-ZABBIX_DB_PASSWORD=
-ZABBIX_DB_ROOT_PASSWORD=
-GLPI_DB_PASSWORD=
-GLPI_DB_ROOT_PASSWORD=
+GLPI_API_USERNAME=zabbix-integration
+GLPI_API_PASSWORD=zabbix-integration-pass
+ZABBIX_DB_PASSWORD=zbx_lab_pass
+ZABBIX_DB_ROOT_PASSWORD=zbx_lab_root_pass
+GLPI_DB_PASSWORD=glpi_lab_pass
+GLPI_DB_ROOT_PASSWORD=glpi_lab_root_pass
 ```
 
 ## 7. Como subir o lab
@@ -140,7 +140,7 @@ Ordem de inicializacao:
 1. Bancos e servicos Zabbix / GLPI
 2. `gemini-incident-api`
 3. `zabbix-bootstrap` (hosts, template, webhooks, actions)
-4. `glpi-bootstrap` (categoria, se tokens existirem)
+4. `glpi-bootstrap` (instalacao/configuracao automatica do GLPI + categoria)
 5. `demo-trigger` (se `AUTO_TRIGGER_DEMO_ALERTS=true`)
 
 Reexecutar bootstrap Zabbix:
@@ -176,12 +176,18 @@ Objetos criados pelo bootstrap:
 |------|-------|
 | URL | http://localhost:8081 |
 
-Na primeira execucao, conclua o instalador web e gere tokens da API: [docs/glpi-api-setup.md](docs/glpi-api-setup.md).
+No fluxo padrao deste repositorio, o GLPI ja sobe instalado e com API habilitada pelo bootstrap.
 
-Depois preencha `.env` e reinicie:
+Usuario de integracao padrao:
+
+```env
+GLPI_API_USERNAME=zabbix-integration
+GLPI_API_PASSWORD=zabbix-integration-pass
+```
+
+Se quiser reexecutar o bootstrap do GLPI manualmente:
 
 ```bash
-docker compose restart gemini-incident-api
 docker compose run --rm glpi-bootstrap
 ```
 
@@ -246,16 +252,16 @@ A API registra aviso nos logs de que o fluxo enriquecido nao usa Gemini real.
 |---------|-------------|------|
 | `/health` com `gemini_configured=false` | `GEMINI_API_KEY` vazia | Preencher chave ou usar `AI_PROVIDER=mock` |
 | Fluxo Gemini retorna 503 | `AI_PROVIDER=gemini` sem chave | Ver secao 5 |
-| `glpi_configured=false` | Tokens GLPI vazios | [docs/glpi-api-setup.md](docs/glpi-api-setup.md) |
+| `glpi_configured=false` | Credenciais GLPI ausentes (`GLPI_USER_TOKEN` ou `GLPI_API_USERNAME/GLPI_API_PASSWORD`) | Conferir `.env` |
 | Hosts do lab ausentes | Bootstrap falhou | `docker compose logs zabbix-bootstrap` |
 | Script de alerta falha | `zabbix-sender` parado | `docker compose up -d` |
-| Ticket nao aparece | GLPI API / tokens | `docker compose logs gemini-incident-api` |
+| Ticket nao aparece | GLPI API / bootstrap | `docker compose logs glpi-bootstrap gemini-incident-api` |
 | Dois tickets na subida | `AUTO_TRIGGER_DEMO_ALERTS=true` | Definir `false` no `.env` |
 
 ## 15. Seguranca e governanca
 
 - Nunca versione `.env` com credenciais reais (ja esta no `.gitignore`)
-- `GEMINI_API_KEY` e tokens GLPI nunca sao logados
+- `GEMINI_API_KEY` e credenciais/tokens GLPI nunca sao logados
 - Webhook protegido por `WEBHOOK_SHARED_SECRET` (header `X-Webhook-Token`)
 - Chamados enriquecidos incluem: *"Analise gerada por IA para apoio operacional. Validar antes de executar acoes em producao."*
 - IA apoia triagem; decisoes operacionais exigem validacao humana
@@ -304,7 +310,7 @@ curl -X POST "http://localhost:8000/demo/send-sample/plain?name=cpu_high" \
 ├── examples/               # Scripts e payloads JSON
 ├── scripts/
 │   ├── bootstrap_zabbix.py
-│   ├── bootstrap_glpi.py
+│   ├── bootstrap_glpi.sh
 │   └── auto_trigger_demo.py
 ├── docker-compose.yml
 └── .env.example
@@ -313,7 +319,7 @@ curl -X POST "http://localhost:8000/demo/send-sample/plain?name=cpu_high" \
 ## Documentacao adicional
 
 - [docs/gemini-api-setup.md](docs/gemini-api-setup.md) — Chave Gemini
-- [docs/glpi-api-setup.md](docs/glpi-api-setup.md) — Tokens GLPI
+- [docs/glpi-api-setup.md](docs/glpi-api-setup.md) — Configuracao manual avancada do GLPI (opcional)
 - [docs/zabbix-webhook-setup.md](docs/zabbix-webhook-setup.md) — Webhooks Zabbix
 - [docs/architecture.md](docs/architecture.md) — Arquitetura
 - [docs/demo-script.md](docs/demo-script.md) — Roteiro da palestra

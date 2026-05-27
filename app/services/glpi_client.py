@@ -2,6 +2,7 @@
 GLPI REST API client: session management, tickets, followups and tasks.
 """
 
+import base64
 import logging
 from typing import Any, Optional
 
@@ -40,6 +41,8 @@ class GlpiClient:
         self.base_url = settings.glpi_base_url.rstrip("/")
         self.app_token = settings.glpi_app_token
         self.user_token = settings.glpi_user_token
+        self.api_username = settings.glpi_api_username
+        self.api_password = settings.glpi_api_password
         self.entity_id = settings.glpi_default_entity_id
         self.category_id = settings.glpi_default_category_id
         self.requester_id = settings.glpi_default_requester_id
@@ -47,17 +50,25 @@ class GlpiClient:
         self.create_task = settings.glpi_create_task
         self._session_token: Optional[str] = None
 
+    def _build_basic_auth(self) -> str:
+        raw = f"{self.api_username}:{self.api_password}".encode("utf-8")
+        return base64.b64encode(raw).decode("ascii")
+
     def _with_app_token(self, headers: dict[str, str]) -> dict[str, str]:
         if self.app_token.strip():
             headers["App-Token"] = self.app_token
         return headers
 
     def _headers_init(self) -> dict[str, str]:
-        return self._with_app_token(
-            {
-                "Content-Type": "application/json",
-                "Authorization": f"user_token {self.user_token}",
-            }
+        headers = {"Content-Type": "application/json"}
+        if self.user_token.strip():
+            headers["Authorization"] = f"user_token {self.user_token}"
+            return self._with_app_token(headers)
+        if self.api_username.strip() and self.api_password.strip():
+            headers["Authorization"] = f"Basic {self._build_basic_auth()}"
+            return self._with_app_token(headers)
+        raise GlpiClientError(
+            "GLPI auth is not configured. Set GLPI_USER_TOKEN or GLPI_API_USERNAME + GLPI_API_PASSWORD."
         )
 
     def _headers_session(self) -> dict[str, str]:
@@ -113,9 +124,10 @@ class GlpiClient:
         """Start GLPI API session and store session token."""
         url = f"{self.base_url}/initSession"
         logger.info(
-            "GLPI initSession -> %s (app_token=%s)",
+            "GLPI initSession -> %s (app_token=%s auth_mode=%s)",
             url,
             mask_secret(self.app_token),
+            "user_token" if self.user_token.strip() else "credentials",
         )
         try:
             with httpx.Client(timeout=30.0) as client:

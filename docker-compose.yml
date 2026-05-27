@@ -144,6 +144,8 @@ services:
       GLPI_BASE_URL: ${GLPI_BASE_URL:-http://glpi/apirest.php}
       GLPI_APP_TOKEN: ${GLPI_APP_TOKEN:-}
       GLPI_USER_TOKEN: ${GLPI_USER_TOKEN:-}
+      GLPI_API_USERNAME: ${GLPI_API_USERNAME:-}
+      GLPI_API_PASSWORD: ${GLPI_API_PASSWORD:-}
       GLPI_DEFAULT_ENTITY_ID: ${GLPI_DEFAULT_ENTITY_ID:-0}
       GLPI_DEFAULT_CATEGORY_ID: ${GLPI_DEFAULT_CATEGORY_ID:-}
       GLPI_DEFAULT_REQUESTER_ID: ${GLPI_DEFAULT_REQUESTER_ID:-}
@@ -185,21 +187,35 @@ services:
     restart: "no"
 
   glpi-bootstrap:
-    image: belempa-gemini-incident-api
+    image: diouxx/glpi:latest
     container_name: lab-glpi-bootstrap
     depends_on:
-      - glpi
+      glpi-db:
+        condition: service_healthy
+      glpi:
+        condition: service_started
     environment:
+      GLPI_CONSOLE_PATH: /var/www/html/glpi/bin/console
+      GLPI_DB_HOST: glpi-db
+      GLPI_DB_PORT: 3306
+      GLPI_DB_NAME: glpi
+      GLPI_DB_USER: glpi
+      GLPI_DB_PASSWORD: ${GLPI_DB_PASSWORD:?Set GLPI_DB_PASSWORD in .env}
       GLPI_BASE_URL: ${GLPI_BASE_URL:-http://glpi/apirest.php}
       GLPI_APP_TOKEN: ${GLPI_APP_TOKEN:-}
       GLPI_USER_TOKEN: ${GLPI_USER_TOKEN:-}
+      GLPI_API_USERNAME: ${GLPI_API_USERNAME:-zabbix-integration}
+      GLPI_API_PASSWORD: ${GLPI_API_PASSWORD:-zabbix-integration-pass}
+      GLPI_API_CLIENT_NAME: ${GLPI_API_CLIENT_NAME:-zabbix-glpi-gemini-lab}
       GLPI_DEFAULT_ENTITY_ID: ${GLPI_DEFAULT_ENTITY_ID:-0}
       GLPI_LAB_CATEGORY_NAME: ${GLPI_LAB_CATEGORY_NAME:-Zabbix Alerts}
+      GLPI_BOOTSTRAP_TIMEOUT: ${GLPI_BOOTSTRAP_TIMEOUT:-600}
     volumes:
       - ./scripts:/scripts:ro
+      - glpi_data:/var/www/html/glpi
     networks:
       - lab-net
-    entrypoint: ["python", "/scripts/bootstrap_glpi.py"]
+    entrypoint: ["bash", "/scripts/bootstrap_glpi.sh"]
     restart: "no"
 
   demo-trigger:
