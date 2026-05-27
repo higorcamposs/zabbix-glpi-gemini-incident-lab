@@ -6,7 +6,7 @@ O fluxo inteligente do lab (`srv-linux-ai`) chama o **Gemini real** para interpr
 
 - Conta Google
 - `AI_PROVIDER=gemini` no `.env` (padrao em `.env.example`)
-- Modelo recomendado: `gemini-2.0-flash-lite` (baixo custo / free tier)
+- Modelo recomendado: `gemini-2.5-flash-lite` (baixa latência / free tier)
 
 ## Passo a passo
 
@@ -32,7 +32,7 @@ Edite:
 ```env
 AI_PROVIDER=gemini
 GEMINI_API_KEY=
-GEMINI_MODEL=gemini-2.0-flash-lite
+GEMINI_MODEL=gemini-2.5-flash-lite
 ```
 
 ### 4. Reiniciar a API
@@ -103,7 +103,7 @@ A analise sera gerada localmente por regras didaticas — **nao** e o fluxo prin
 
 Recomendacoes para palestra:
 
-- Manter `gemini-2.0-flash-lite`
+- Manter `gemini-2.5-flash-lite`
 - Evitar loops automatizados disparando centenas de alertas
 - Desativar `AUTO_TRIGGER_DEMO_ALERTS` se for repetir a demo varias vezes no mesmo dia
 

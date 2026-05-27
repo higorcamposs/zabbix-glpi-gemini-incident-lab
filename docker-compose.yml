@@ -58,7 +58,7 @@ services:
       - zabbix-server
       - zabbix-db
     ports:
-      - "${ZABBIX_WEB_PORT:-8080}:8080"
+      - "127.0.0.1:${ZABBIX_WEB_PORT:-8080}:8080"
     environment:
       ZBX_SERVER_HOST: zabbix-server
       DB_SERVER_HOST: zabbix-db
@@ -111,7 +111,7 @@ services:
       glpi-db:
         condition: service_healthy
     ports:
-      - "${GLPI_WEB_PORT:-8081}:80"
+      - "127.0.0.1:${GLPI_WEB_PORT:-8081}:80"
     environment:
       TIMEZONE: America/Sao_Paulo
     volumes:
@@ -132,7 +132,7 @@ services:
     depends_on:
       - glpi
     ports:
-      - "${API_PORT:-8000}:8000"
+      - "127.0.0.1:${API_PORT:-8000}:8000"
     environment:
       APP_ENV: ${APP_ENV:-local}
       LOG_LEVEL: ${LOG_LEVEL:-INFO}
@@ -140,7 +140,7 @@ services:
       WEBHOOK_SHARED_SECRET: ${WEBHOOK_SHARED_SECRET:?Set WEBHOOK_SHARED_SECRET in .env}
       AI_PROVIDER: ${AI_PROVIDER:-gemini}
       GEMINI_API_KEY: ${GEMINI_API_KEY:-}
-      GEMINI_MODEL: ${GEMINI_MODEL:-gemini-2.0-flash-lite}
+      GEMINI_MODEL: ${GEMINI_MODEL:-gemini-2.5-flash-lite}
       GLPI_BASE_URL: ${GLPI_BASE_URL:-http://glpi/apirest.php}
       GLPI_APP_TOKEN: ${GLPI_APP_TOKEN:-}
       GLPI_USER_TOKEN: ${GLPI_USER_TOKEN:-}
@@ -178,7 +178,7 @@ services:
       ZABBIX_USER: ${ZABBIX_USER:?Set ZABBIX_USER in .env}
       ZABBIX_PASSWORD: ${ZABBIX_PASSWORD:?Set ZABBIX_PASSWORD in .env}
       WEBHOOK_SHARED_SECRET: ${WEBHOOK_SHARED_SECRET:?Set WEBHOOK_SHARED_SECRET in .env}
-      LAB_RUNBOOK_URL: ${LAB_RUNBOOK_URL:-https://github.com/SEU_USUARIO/zabbix-glpi-gemini-incident-lab}
+      LAB_RUNBOOK_URL: ${LAB_RUNBOOK_URL:-https://github.com/higorcamposs/zabbix-glpi-gemini-incident-lab}
     volumes:
       - ./scripts:/scripts:ro
     networks:
@@ -222,10 +222,14 @@ services:
     image: belempa-gemini-incident-api
     container_name: lab-demo-trigger
     depends_on:
-      - zabbix-bootstrap
-      - gemini-incident-api
+      zabbix-bootstrap:
+        condition: service_completed_successfully
+      glpi-bootstrap:
+        condition: service_completed_successfully
+      gemini-incident-api:
+        condition: service_healthy
     environment:
-      AUTO_TRIGGER_DEMO_ALERTS: ${AUTO_TRIGGER_DEMO_ALERTS:-true}
+      AUTO_TRIGGER_DEMO_ALERTS: ${AUTO_TRIGGER_DEMO_ALERTS:-false}
       ZABBIX_SENDER_SERVER: zabbix-server
       ZABBIX_SENDER_PORT: ${ZABBIX_SENDER_PORT:-10051}
       DEMO_TRIGGER_WAIT_SECONDS: ${DEMO_TRIGGER_WAIT_SECONDS:-300}

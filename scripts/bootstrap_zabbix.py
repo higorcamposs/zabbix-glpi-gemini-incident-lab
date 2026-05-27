@@ -145,7 +145,7 @@ COMMON_MACROS = [
         "macro": "{$RUNBOOK_URL}",
         "value": os.getenv(
             "LAB_RUNBOOK_URL",
-            "https://github.com/SEU_USUARIO/zabbix-glpi-gemini-incident-lab",
+            "https://github.com/higorcamposs/zabbix-glpi-gemini-incident-lab",
         ),
     },
     {

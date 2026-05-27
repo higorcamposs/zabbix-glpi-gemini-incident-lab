@@ -4,47 +4,58 @@ Laboratorio didatico de **IA aplicada em Operacoes de TI** com fluxo **real**:
 
 **Zabbix 7 → Webhook → API Python → Gemini API (Free Tier) → GLPI → Chamado enriquecido**
 
-O fluxo principal usa **Gemini real** via `GEMINI_API_KEY`. O modo `mock` existe apenas como fallback opcional.
+O fluxo principal utiliza a **API do Gemini** (Google AI) para realizar a análise inteligente. O modo `mock` existe apenas como fallback pedagógico.
 
-## Demo em 5 minutos
+---
 
-1. Suba o ambiente:
+## 🚀 Primeiro uso — Passo a passo completo
 
-```bash
-cp .env.example .env
-# Preencha GEMINI_API_KEY (os demais defaults do lab ja vem prontos)
-docker compose up -d
-```
+Para uma experiência real, siga esta ordem:
 
-2. Acompanhe a API:
+1. **Clonar e Configurar**:
+   ```bash
+   git clone https://github.com/higorcamposs/zabbix-glpi-gemini-incident-lab.git
+   cd zabbix-glpi-gemini-incident-lab
+   cp .env.example .env
+   ```
 
-```bash
-docker compose logs -f gemini-incident-api
-```
+2. **Preencher Credenciais**:
+   Edite o `.env` e preencha obrigatoriamente:
+   - `GEMINI_API_KEY`: Obtenha em Google AI Studio.
+   - `GEMINI_MODEL=gemini-2.5-flash-lite`
+   - Senhas de banco e `WEBHOOK_SHARED_SECRET`.
+   - Garanta que `AUTO_TRIGGER_DEMO_ALERTS=false` (recomendado para a primeira subida).
 
-3. Acesse o Zabbix: http://localhost:8080 (credenciais locais em `ZABBIX_USER` / `ZABBIX_PASSWORD`)
+3. **Subir o Lab**:
+   ```bash
+   docker compose up -d
+   ```
 
-4. Acesse o GLPI: http://localhost:8081
+4. **Configurar o GLPI**:
+   - Acesse http://localhost:8081.
+   - Siga o assistente (o bootstrap automático ajuda, mas você deve validar se a API está habilitada em *Configurar > Geral > API*).
+   - Gere o **User Token** para o seu usuário e preencha `GLPI_USER_TOKEN` no `.env`.
 
-5. Dispare alerta tradicional:
+5. **Validar e Reiniciar**:
+   ```bash
+   docker compose restart gemini-incident-api
+   curl -s http://localhost:8000/health | jq .
+   ```
 
-```bash
-./examples/send_cpu_high_traditional.sh
-```
+6. **Disparar Alertas Manuais**:
+   ```bash
+   ./examples/send_cpu_high_traditional.sh
+   ./examples/send_cpu_high_ai.sh
+   ```
 
-6. Veja o ticket simples no GLPI
+7. **Comparar**: Abra o GLPI e veja a diferença entre o ticket técnico puro e o ticket com análise do Gemini.
 
-7. Dispare alerta com Gemini:
+---
 
-```bash
-./examples/send_cpu_high_ai.sh
-```
+## 🤖 Demo automática após configuração
 
-8. Veja o ticket enriquecido no GLPI (resumo, impacto, causa provavel, proximos passos)
-
-9. Compare os dois chamados lado a lado
-
-Com `AUTO_TRIGGER_DEMO_ALERTS=true` (padrao), os passos 5–8 podem ocorrer automaticamente apos o bootstrap.
+Se o seu ambiente já estiver 100% configurado (API Gemini e GLPI com tokens), você pode ativar alertas automáticos na subida:
+`AUTO_TRIGGER_DEMO_ALERTS=true` no seu `.env`.
 
 ---
 
@@ -101,7 +112,7 @@ Detalhes em [docs/architecture.md](docs/architecture.md).
 2. Faca login com sua conta Google
 3. Clique em **Create API key**
 4. Copie a chave e cole em `GEMINI_API_KEY` no `.env`
-5. Mantenha `GEMINI_MODEL=gemini-2.0-flash-lite` (recomendado para o lab)
+5. Mantenha `GEMINI_MODEL=gemini-2.5-flash-lite`
 
 Guia detalhado: [docs/gemini-api-setup.md](docs/gemini-api-setup.md)
 
@@ -119,7 +130,7 @@ Variaveis obrigatorias para o fluxo completo:
 WEBHOOK_SHARED_SECRET=lab-webhook-secret
 AI_PROVIDER=gemini
 GEMINI_API_KEY=
-GEMINI_MODEL=gemini-2.0-flash-lite
+GEMINI_MODEL=gemini-2.5-flash-lite
 GLPI_API_USERNAME=zabbix-integration
 GLPI_API_PASSWORD=zabbix-integration-pass
 ZABBIX_DB_PASSWORD=zbx_lab_pass
@@ -269,6 +280,16 @@ A API registra aviso nos logs de que o fluxo enriquecido nao usa Gemini real.
 ## 16. Roteiro de demonstracao para palestra
 
 Roteiro passo a passo para o apresentador: [docs/demo-script.md](docs/demo-script.md)
+
+## 17. Testes e Qualidade
+
+Para validar a lógica de integração localmente:
+```bash
+pytest app/tests
+```
+
+## Licença
+Este projeto é disponibilizado sob a licença MIT para fins educacionais, estudos e demonstrações.
 
 ---
 

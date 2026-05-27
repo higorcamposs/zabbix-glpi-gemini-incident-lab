@@ -19,7 +19,7 @@ sys.path.insert(0, str(Path(__file__).resolve().parent))
 
 from send_zabbix_value import send_value  # noqa: E402
 
-AUTO_TRIGGER = os.getenv("AUTO_TRIGGER_DEMO_ALERTS", "true").strip().lower() in (
+AUTO_TRIGGER = os.getenv("AUTO_TRIGGER_DEMO_ALERTS", "false").strip().lower() in (
     "1",
     "true",
     "yes",

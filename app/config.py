@@ -28,7 +28,7 @@ class Settings(BaseSettings):
     # Gemini
     ai_provider: Literal["mock", "gemini"] = "gemini"
     gemini_api_key: str = ""
-    gemini_model: str = "gemini-2.0-flash-lite"
+    gemini_model: str = "gemini-2.5-flash-lite"
 
     # GLPI REST API
     glpi_base_url: str = "http://glpi/apirest.php"
