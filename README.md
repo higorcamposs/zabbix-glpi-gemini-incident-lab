@@ -22,25 +22,21 @@ Para uma experiência real, siga esta ordem:
 2. **Preencher Credenciais**:
    Edite o `.env` e preencha obrigatoriamente:
    - `GEMINI_API_KEY`: Obtenha em Google AI Studio.
-   - `GEMINI_MODEL=gemini-2.5-flash-lite`
-   - Senhas de banco e `WEBHOOK_SHARED_SECRET`.
+   - Garanta que `AI_PROVIDER=gemini` e `GEMINI_MODEL=gemini-2.5-flash-lite`.
    - Garanta que `AUTO_TRIGGER_DEMO_ALERTS=false` (recomendado para a primeira subida).
 
 3. **Subir o Lab**:
    ```bash
-   docker compose up -d
+   docker compose up -d --build
    ```
 
-4. **Configurar o GLPI**:
-   - Acesse http://localhost:8081.
-   - Siga o assistente (o bootstrap automático ajuda, mas você deve validar se a API está habilitada em *Configurar > Geral > API*).
-   - Gere o **User Token** para o seu usuário e preencha `GLPI_USER_TOKEN` no `.env`.
+4. **GLPI configurado e funcional**:
+   - O laboratório utiliza bootstrap automático. O usuário de integração (`zabbix-integration`) e a API já estarão configurados. 
+   - O uso de `GLPI_USER_TOKEN` é uma alternativa opcional para configurações personalizadas.
 
 5. **Validar e Reiniciar**:
-   ```bash
-   docker compose restart gemini-incident-api
-   curl -s http://localhost:8000/health | jq .
-   ```
+   Aguarde os logs de `glpi-bootstrap` e `zabbix-bootstrap` terminarem.
+   `curl -s http://localhost:8000/health | jq .`
 
 6. **Disparar Alertas Manuais**:
    ```bash
@@ -54,7 +50,7 @@ Para uma experiência real, siga esta ordem:
 
 ## 🤖 Demo automática após configuração
 
-Se o seu ambiente já estiver 100% configurado (API Gemini e GLPI com tokens), você pode ativar alertas automáticos na subida:
+Se o seu ambiente já estiver configurado e funcional (API Gemini e GLPI), você pode ativar alertas automáticos na subida:
 `AUTO_TRIGGER_DEMO_ALERTS=true` no seu `.env`.
 
 ---

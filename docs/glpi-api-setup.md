@@ -61,13 +61,10 @@ curl -s -X GET "http://localhost:8081/apirest.php/initSession" \
 
 ## 4. (Opcional) Modo token
 
-Se preferir token em vez de credenciais:
+O uso de `GLPI_USER_TOKEN` e `GLPI_APP_TOKEN` é opcional. O fluxo padrão do laboratório já utiliza as credenciais didáticas configuradas pelo bootstrap automático.
 
 ```env
-GLPI_APP_TOKEN=
-GLPI_USER_TOKEN=
-GLPI_API_USERNAME=
-GLPI_API_PASSWORD=
+GLPI_USER_TOKEN=seu_token_aqui
 ```
 
 Depois:
