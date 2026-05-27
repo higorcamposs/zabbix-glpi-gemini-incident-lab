@@ -283,9 +283,12 @@ Roteiro passo a passo para o apresentador: [docs/demo-script.md](docs/demo-scrip
 
 ## 17. Testes e Qualidade
 
-Para validar a lógica de integração localmente:
+Para validar a lógica de integração e segurança:
 ```bash
-pytest app/tests
+python -m venv .venv
+source .venv/bin/activate
+pip install -r app/requirements.txt -r requirements-dev.txt
+pytest app/tests -v
 ```
 
 ## Licença

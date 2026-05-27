@@ -2,8 +2,8 @@
 """
 Auto-trigger demo alerts after Zabbix bootstrap.
 
-When AUTO_TRIGGER_DEMO_ALERTS=true (default), sends cpu.util=95 to both lab hosts
-so students see two GLPI tickets on first boot: plain and Gemini-enriched.
+AUTO_TRIGGER_DEMO_ALERTS=false is the safe default for first runs.
+When true, it sends cpu.util=95 to both hosts after bootstraps succeed.
 """
 
 from __future__ import annotations

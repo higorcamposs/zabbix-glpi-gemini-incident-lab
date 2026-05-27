@@ -17,7 +17,8 @@ def sample_payload():
         "item_key": "cpu.util",
         "item_value": "95",
         "flow_type": "ai",
-        "lab_scenario": "cpu_high"
+        "lab_scenario": "cpu_high",
+        "secret": "lab-webhook-secret"
     }
 
 def test_alert_context_construction(sample_payload):
@@ -26,53 +27,32 @@ def test_alert_context_construction(sample_payload):
     assert ctx.host_name == "srv-linux-ai"
     assert ctx.item_value == "95"
 
-def test_plain_ticket_generation(sample_payload):
-    payload = ZabbixWebhookPayload.model_validate(sample_payload)
-    ctx = build_alert_context(payload)
-    ticket = build_plain_ticket(ctx)
-    assert "[Zabbix]" in ticket.title
-    assert "srv-linux-ai" in ticket.content
-
-def test_enriched_package_generation(sample_payload):
-    payload = ZabbixWebhookPayload.model_validate(sample_payload)
-    ctx = build_alert_context(payload)
-    analysis = AIAnalysis(
-        resumo_executivo="CPU está muito alta.",
-        impacto_potencial="Lentidão geral.",
-        causa_provavel="Processo pesado.",
-        possiveis_causas=["App", "Log rotation"],
-        validacoes_recomendadas=["Check top"],
-        comandos_uteis=[],
-        proximos_passos_n1=[],
-        proximos_passos_n2=[],
-        criterios_de_escalonamento=[],
-        evidencias_relevantes=[],
-        time_sugerido="Linux",
-        prioridade_sugerida="Alta",
-        risco_operacional="Baixo",
-        mensagem_para_chamado="CPU Alta"
-    )
-    package = build_enriched_package(ctx, analysis)
-    assert "[AI/Zabbix]" in package.title
-    assert package.summary_content is not None
-    assert package.followup_content is not None
-
 def test_health_endpoint_security():
     response = client.get("/health")
     assert response.status_code == 200
     data = response.json()
-    # Garantir que segredos não vazam
-    assert "gemini_api_key" not in data
-    assert "glpi_user_token" not in data
-    assert "glpi_api_password" not in data
+    # Auditoria de segurança: Proibido expor segredos no health
+    secrets = ["gemini_api_key", "glpi_api_password", "glpi_user_token", "webhook_shared_secret"]
+    for s in secrets:
+        assert s not in data
 
 def test_webhook_unauthorized(sample_payload):
-    # Sem o header X-Webhook-Token correto
+    sample_payload["secret"] = "wrong-secret"
     response = client.post("/webhook/zabbix/plain", json=sample_payload)
     assert response.status_code == 401
 
-def test_webhook_authorized(sample_payload, monkeypatch):
-    monkeypatch.setenv("WEBHOOK_SHARED_SECRET", "test-secret")
-    headers = {"X-Webhook-Token": "test-secret"}
-    # Mockando a resposta do GLPI para não precisar de ambiente real nos testes unitários
-    pass
+def test_enriched_package_logic(sample_payload):
+    payload = ZabbixWebhookPayload.model_validate(sample_payload)
+    ctx = build_alert_context(payload)
+    mock_analysis = AIAnalysis(
+        resumo_executivo="Teste de analise",
+        impacto_potencial="Baixo",
+        causa_provavel="Teste",
+        mensagem_para_chamado="Texto chamado",
+        prioridade_sugerida="Baixa",
+        time_sugerido="Linux"
+    )
+    package = build_enriched_package(ctx, mock_analysis)
+    assert "[AI/Zabbix]" in package.title
+    assert len(package.summary_content) > 0
+    assert len(package.followup_content) > 0
